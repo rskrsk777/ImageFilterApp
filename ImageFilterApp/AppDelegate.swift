@@ -1,10 +1,3 @@
-//
-//  AppDelegate.swift
-//  ImageFilterApp
-//
-//  Created by ryosuke kubo on 2019/01/10.
-//  Copyright © 2019 ryosuke kubo. All rights reserved.
-//
 
 import UIKit
 
@@ -15,7 +8,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        let collectionVC = CollectionViewController()
+        let navigationVC = UINavigationController(rootViewController: collectionVC)
+        navigationVC.view.backgroundColor = UIColor.white
+        window = UIWindow()
+        window?.rootViewController = navigationVC
+        window?.makeKeyAndVisible()
         return true
     }
 
