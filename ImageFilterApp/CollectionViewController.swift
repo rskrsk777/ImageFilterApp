@@ -1,6 +1,8 @@
 
 
 import UIKit
+import RealmSwift
+import Realm
 
 let screenSize = UIScreen.main.bounds.size
 
@@ -8,7 +10,8 @@ class CollectionViewController: UIViewController {
     
     var collectionView: UICollectionView!
     var collectionLayout: UICollectionViewFlowLayout!
-    var images: [UIImage] = []
+    var realm: Realm!
+    var realmResults: Results<ImageStore>!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -28,31 +31,41 @@ class CollectionViewController: UIViewController {
         collectionView.backgroundColor = UIColor.white
         
         view.addSubview(collectionView)
+        
+        // Realm
+        realm = try! Realm()
+        realmResults = realm.objects(ImageStore.self)
     }
     
-    @objc func tapAddButton () {
-        
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        print(realmResults)
+        collectionView.reloadData()
     }
 }
 
 extension CollectionViewController: UICollectionViewDelegate {
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        let imageEditingVC = ImageEditingViewController(image: images[indexPath.row])
+        let jpgData = realmResults[indexPath.row].image
+        let image = UIImage(data: jpgData)!
+        let identifier = realmResults[indexPath.row].identifier
+        let imageEditingVC = ImageEditingViewController(image: image, identifier: identifier)
         self.navigationController?.pushViewController(imageEditingVC, animated: true)
     }
 }
 
 extension CollectionViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return images.count
+        return realmResults.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "CollectionCell", for: indexPath)
         let imageView = UIImageView(frame: cell.contentView.frame)
         imageView.backgroundColor = UIColor.black
-        imageView.image = images[indexPath.row]
+        let jpgData = realmResults[indexPath.row].image
+        imageView.image = UIImage(data: jpgData)
         imageView.contentMode = UIView.ContentMode.scaleAspectFit
         cell.contentView.addSubview(imageView)
         cell.layer.borderWidth = 5.0
@@ -80,6 +93,7 @@ extension CollectionViewController: UINavigationControllerDelegate, UIImagePicke
      を追加して利用目的を書きます
      これを入れないでフォトライブリやカメラを起動しようとするとアプリがストンと落ちます
      */
+    
     @objc func tapAdd () {
         let imagePicker = UIImagePickerController()
         imagePicker.delegate = self
@@ -91,11 +105,12 @@ extension CollectionViewController: UINavigationControllerDelegate, UIImagePicke
         guard let image = info[UIImagePickerController.InfoKey.originalImage] as? UIImage else {
             return
         }
-        print(image)
         
-        images.append(image)
-
-        print(images)
+        try! realm.write {
+            let imageData = image.jpegData(compressionQuality: 0.8)!
+            let imageStore = ImageStore(value: ["image": imageData])
+            realm.add(imageStore)
+        }
         dismiss(animated: true, completion: nil)
         
         collectionView.reloadData()
@@ -103,3 +118,5 @@ extension CollectionViewController: UINavigationControllerDelegate, UIImagePicke
     
     
 }
+
+

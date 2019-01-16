@@ -7,15 +7,23 @@
 //
 
 import UIKit
+import CoreImage
+import Realm
+import RealmSwift
 
 class ImageEditingViewController: UIViewController {
 
     var image: UIImage!
+    let identifier: String
     var imageView: UIImageView!
-    var filterNameLabel: UILabel!
+    let filterNameArray: [String] = ["CIPhotoEffectMono", "CIPhotoEffectChrome", "CIPhotoEffectFade", "CIPhotoEffectInstant", "CIPhotoEffectNoir", "CIPhotoEffectProcess", "CIPhotoEffectTonal", "CIPhotoEffectTransfer", "CILinearToSRGBToneCurve"]
+    var ciFilterTable: UITableView!
+    let context = CIContext(options: nil)
+    var realm: Realm!
     
-    init(image: UIImage) {
+    init(image: UIImage, identifier: String) {
         self.image = image
+        self.identifier = identifier
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -25,23 +33,121 @@ class ImageEditingViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        // saveがタップされたら画像を上書き保存する
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(self.save))
+        let navigationBarSize = self.navigationController?.navigationBar.frame.height
+        // 画像がタップされたら新しいフィルターに変更する
         imageView = UIImageView()
-        imageView.bounds.size = CGSize(width: screenSize.width, height: screenSize.width)
-        imageView.center = CGPoint(x: screenSize.width / 2, y: screenSize.height / 2)
+        imageView.bounds.size = CGSize(width: screenSize.width - 20, height: screenSize.width - 20)
+        imageView.frame.origin = CGPoint(x: 10.0, y: navigationBarSize! + 10.0)
+        self.navigationController?.hidesBarsOnTap = true
         imageView.contentMode = UIView.ContentMode.scaleAspectFit
         imageView.image = image
+        imageView.isUserInteractionEnabled = true
+        // let tapGesture = UITapGestureRecognizer(target: self, action: #selector(self.tappedImage))
+        // imageView.addGestureRecognizer(tapGesture)
         view.addSubview(imageView)
+        print(imageView.frame)
         
-        filterNameLabel = UILabel(frame: CGRect(x: 0.0, y: screenSize.height - ((screenSize.height - imageView.frame.maxY) / 2), width: screenSize.width, height: 30))
-        filterNameLabel.text = "Filter"
-        filterNameLabel.font = UIFont.systemFont(ofSize: 30)
-        filterNameLabel.adjustsFontSizeToFitWidth = true
-        filterNameLabel.textAlignment = NSTextAlignment.center
-        filterNameLabel.layer.borderWidth = 3.0
-        filterNameLabel.layer.borderColor = UIColor.black.cgColor
-        print(filterNameLabel.font)
-        view.addSubview(filterNameLabel)
+        // CoreImage TableView
+        ciFilterTable = UITableView(frame: CGRect(x: 0, y: imageView.frame.height + 20, width: screenSize.width, height: screenSize.height - imageView.bounds.maxY), style: UITableView.Style.plain)
+        ciFilterTable.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        ciFilterTable.delegate = self
+        ciFilterTable.dataSource = self
+        self.view.addSubview(ciFilterTable)
     }
+    
+    @objc func save () {
+        realm = try! Realm()
+        let alert = UIAlertController(title: "Save", message: nil, preferredStyle: UIAlertController.Style.alert)
+        let saveNewImage = UIAlertAction(title: "新規保存", style: .default, handler: {(action) -> Void in
+            print("New Image")
+            let newImage = ImageStore(value: ["image": self.image.jpegData(compressionQuality: 0.9)])
+            try! self.realm.write {
+                self.realm.add(newImage)
+                
+            }
+            self.navigationController?.popViewController(animated: true)
+        })
+        let saveOverride = UIAlertAction(title: "上書き保存", style: .default, handler: {(action) -> Void in
+            print("Override Image")
+            
+            self.navigationController?.popViewController(animated: true)
+        })
+        alert.addAction(saveNewImage)
+        alert.addAction(saveOverride)
+        present(alert, animated: true, completion: {
+            print("Show Alert")
+        })
+    }
+
+    /*
+    @objc func tappedImage () {
+        print("start")
+
+        let filter = CIFilter(name: filterNameArray[0])!
+        filter.setDefaults()
+        filter.setValue(coreImage, forKey: kCIInputImageKey)
+        let outputImage = filter.outputImage!
+        print("end editing")
+        self.image = UIImage(ciImage: outputImage)
+        DispatchQueue.main.async {
+            self.imageView.image = self.image
+            self.imageView.setNeedsLayout()
+        }
+        print(imageView.frame)
+    }
+    */
 
 
 }
+
+extension ImageEditingViewController: UITableViewDelegate {
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        // セルが選択されたときのコード
+        print(indexPath.row)
+        print("start")
+        guard let coreImage = CIImage(image: self.image) else {
+            print("coreImage is nil")
+            return
+        }
+        guard let filter = CIFilter(name: filterNameArray[indexPath.row]) else {
+            print("filer is nil")
+            return
+        }
+        filter.setDefaults()
+        filter.setValue(coreImage, forKey: kCIInputImageKey)
+        //let outputImage = filter.outputImage!
+        let outputCGImage = context.createCGImage(filter.outputImage!, from: (filter.outputImage?.extent)!)
+        print("end editing")
+        self.image = UIImage(cgImage: outputCGImage!)
+        imageView.image = image
+        imageView.contentMode = UIView.ContentMode.scaleAspectFit
+        /*
+        DispatchQueue.main.async {
+            self.imageView.image = self.image
+            self.imageView.setNeedsLayout()
+        }
+        */
+        print(imageView.frame)
+        print(image.size)
+        print(type(of: image))
+        print(image)
+    }
+}
+
+extension ImageEditingViewController: UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return filterNameArray.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = ciFilterTable.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        cell.textLabel?.text = filterNameArray[indexPath.row]
+        return cell
+    }
+    
+    
+}
+
