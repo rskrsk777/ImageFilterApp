@@ -33,9 +33,11 @@ class ImageEditingViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        view.backgroundColor = .black
         // saveがタップされたら画像を上書き保存する
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .save, target: self, action: #selector(self.save))
         let navigationBarSize = self.navigationController?.navigationBar.frame.height
+        // self.navigationController?.navigationBar.backgroundColor = UIColor.darkGray
         // 画像がタップされたら新しいフィルターに変更する
         imageView = UIImageView()
         imageView.bounds.size = CGSize(width: screenSize.width - 20, height: screenSize.width - 20)
@@ -51,6 +53,7 @@ class ImageEditingViewController: UIViewController {
         
         // CoreImage TableView
         ciFilterTable = UITableView(frame: CGRect(x: 0, y: imageView.frame.height + 20, width: screenSize.width, height: screenSize.height - imageView.bounds.maxY), style: UITableView.Style.plain)
+        ciFilterTable.backgroundColor = .black
         ciFilterTable.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
         ciFilterTable.delegate = self
         ciFilterTable.dataSource = self
@@ -145,6 +148,11 @@ extension ImageEditingViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = ciFilterTable.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         cell.textLabel?.text = filterNameArray[indexPath.row]
+        cell.backgroundColor = UIColor.black
+        cell.textLabel?.textColor = UIColor.white
+        cell.layer.borderWidth = 1
+        cell.layer.borderColor = UIColor.white.cgColor
+        cell.layer.cornerRadius = 10
         return cell
     }
     

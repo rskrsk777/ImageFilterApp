@@ -17,6 +17,8 @@ class CollectionViewController: UIViewController {
         super.viewDidLoad()
         // Navigation
         self.navigationItem.title = "Images"
+        self.navigationController?.navigationBar.barTintColor = UIColor.darkGray
+        self.navigationController?.navigationBar.titleTextAttributes = [.foregroundColor: UIColor.white]
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: UIBarButtonItem.SystemItem.add, target: self, action: #selector(self.tapAdd))
         // UICollectionFlowLayout
         collectionLayout = UICollectionViewFlowLayout()
@@ -25,10 +27,11 @@ class CollectionViewController: UIViewController {
         collectionLayout.scrollDirection = .vertical
         // UICollectionView
         collectionView = UICollectionView(frame: self.view.frame, collectionViewLayout: collectionLayout)
+        collectionView.backgroundColor = UIColor.black
         collectionView.delegate = self
         collectionView.dataSource = self
         collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "CollectionCell")
-        collectionView.backgroundColor = UIColor.white
+        collectionView.backgroundColor = UIColor.black
         
         view.addSubview(collectionView)
         
@@ -68,7 +71,7 @@ extension CollectionViewController: UICollectionViewDataSource {
         imageView.image = UIImage(data: jpgData)
         imageView.contentMode = UIView.ContentMode.scaleAspectFit
         cell.contentView.addSubview(imageView)
-        cell.layer.borderWidth = 5.0
+        cell.layer.borderWidth = 1.0
         cell.layer.borderColor = UIColor.white.cgColor
         return cell
     }
