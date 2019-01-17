@@ -20,6 +20,7 @@ class ImageEditingViewController: UIViewController {
     var ciFilterTable: UITableView!
     let context = CIContext(options: nil)
     var realm: Realm!
+    var result: Results<ImageStore>!
     
     init(image: UIImage, identifier: String) {
         self.image = image
@@ -62,6 +63,7 @@ class ImageEditingViewController: UIViewController {
     
     @objc func save () {
         realm = try! Realm()
+        result = realm.objects(ImageStore.self)
         let alert = UIAlertController(title: "Save", message: nil, preferredStyle: UIAlertController.Style.alert)
         let saveNewImage = UIAlertAction(title: "新規保存", style: .default, handler: {(action) -> Void in
             print("New Image")
@@ -74,7 +76,12 @@ class ImageEditingViewController: UIViewController {
         })
         let saveOverride = UIAlertAction(title: "上書き保存", style: .default, handler: {(action) -> Void in
             print("Override Image")
-            
+            self.result = self.result.filter("identifier = %@", self.identifier)
+            print(self.result)
+            try! self.realm.write {
+                let imageData = self.imageView.image?.jpegData(compressionQuality: 0.9)
+                self.result[0].image = imageData!
+            }
             self.navigationController?.popViewController(animated: true)
         })
         alert.addAction(saveNewImage)
